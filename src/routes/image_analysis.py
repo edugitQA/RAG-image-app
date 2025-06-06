@@ -171,7 +171,7 @@ def upload_file():
     
     # Gera o arquivo RAG estruturado em formato de texto.
     rag_file = os.path.join(session_dir, "rag_structured_data.txt")
-    with open(rag_file, "w") as f:
+    with open(rag_file, "w", encoding="utf-8") as f:
         f.write("# Dados Estruturados para RAG\n\n")
         f.write(f"## Prompt utilizado\n\n{custom_prompt}\n\n") # Inclui o prompt usado.
         f.write("## Resultados da Análise\n\n")
