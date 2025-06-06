@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Imagens para RAG</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .progress {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            height: 25px;
+        }
+        .progress-bar {
+            font-size: 16px;
+            line-height: 25px;
+        }
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+        }
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .result-card {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .result-image {
+            max-width: 300px;
+            max-height: 300px;
+            margin-bottom: 10px;
+        }
+        #downloadBtn {
+            margin-top: 20px;
+        }
+        .loading-spinner {
+            display: none;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Análise de Imagens para RAG</h1>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Upload de Imagens</h5>
+            </div>
+            <div class="card-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="imageInput" class="form-label">Selecione as imagens para análise:</label>
+                        <input class="form-control" type="file" id="imageInput" name="files[]" multiple accept="image/*">
+                    </div>
+                    <div class="preview-container" id="previewContainer"></div>
+                    <button type="submit" class="btn btn-primary">
+                        Analisar Imagens
+                        <div class="spinner-border spinner-border-sm loading-spinner" id="loadingSpinner" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                    </button>
+                </form>
+                
+                <div class="progress mt-3" style="display: none;" id="progressContainer">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         id="progressBar"
+                         aria-valuenow="0" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100" 
+                         style="width: 0%">
+                        0%
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" id="resultsCard" style="display: none;">
+            <div class="card-header">
+                <h5>Resultados da Análise</h5>
+            </div>
+            <div class="card-body">
+                <div id="resultsContainer"></div>
+                <button id="downloadBtn" class="btn btn-success">Baixar Arquivo RAG Estruturado</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadForm = document.getElementById('uploadForm');
+            const imageInput = document.getElementById('imageInput');
+            const previewContainer = document.getElementById('previewContainer');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const resultsCard = document.getElementById('resultsCard');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            
+            // Função para mostrar preview das imagens selecionadas
+            imageInput.addEventListener('change', function() {
+                previewContainer.innerHTML = '';
+                
+                if (this.files) {
+                    Array.from(this.files).forEach(file => {
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.className = 'image-preview';
+                            previewContainer.appendChild(img);
+                        }
+                        
+                        reader.readAsDataURL(file);
+                    });
+                }
+            });
+            
+            // Função para enviar as imagens para análise
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData();
+                const files = imageInput.files;
+                
+                if (files.length === 0) {
+                    alert('Por favor, selecione pelo menos uma imagem.');
+                    return;
+                }
+                
+                // Adiciona os arquivos ao FormData
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files[]', files[i]);
+                }
+                
+                // Mostra o progresso e o spinner
+                progressContainer.style.display = 'block';
+                loadingSpinner.style.display = 'inline-block';
+                
+                // Envia os arquivos para o servidor
+                fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro no upload das imagens');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Esconde o progresso e o spinner
+                    progressContainer.style.display = 'none';
+                    loadingSpinner.style.display = 'none';
+                    
+                    // Mostra os resultados
+                    displayResults(data.results);
+                    
+                    // Armazena o caminho do arquivo RAG para download
+                    downloadBtn.setAttribute('data-file', data.rag_file);
+                    
+                    // Mostra o card de resultados
+                    resultsCard.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Ocorreu um erro durante o upload: ' + error.message);
+                    loadingSpinner.style.display = 'none';
+                });
+                
+                // Simula o progresso (já que não temos feedback em tempo real do servidor)
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    if (progress > 95) {
+                        clearInterval(interval);
+                    } else {
+                        progressBar.style.width = progress + '%';
+                        progressBar.setAttribute('aria-valuenow', progress);
+                        progressBar.textContent = progress + '%';
+                    }
+                }, 500);
+            });
+            
+            // Função para exibir os resultados
+            function displayResults(results) {
+                resultsContainer.innerHTML = '';
+                
+                results.forEach((result, index) => {
+                    const resultCard = document.createElement('div');
+                    resultCard.className = 'result-card';
+                    
+                    // Cria o HTML para o card de resultado
+                    let cardContent = `
+                        <h5>Imagem ${index + 1}: ${result.filename}</h5>
+                    `;
+                    
+                    if (result.error) {
+                        cardContent += `<div class="alert alert-danger">${result.error}</div>`;
+                    } else {
+                        cardContent += `
+                            <img src="/uploads/${result.path.split('/').pop()}" class="result-image" alt="${result.filename}">
+                            <h6>Análise:</h6>
+                            <p>${result.description}</p>
+                        `;
+                    }
+                    
+                    resultCard.innerHTML = cardContent;
+                    resultsContainer.appendChild(resultCard);
+                });
+            }
+            
+            // Função para download do arquivo RAG estruturado
+            downloadBtn.addEventListener('click', function() {
+                const filePath = this.getAttribute('data-file');
+                if (filePath) {
+                    window.open('/download?file=' + encodeURIComponent(filePath), '_blank');
+                }
+            });
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

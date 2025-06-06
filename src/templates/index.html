@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Imagens para RAG</title>
+    <!-- Link para o CSS do Bootstrap para estilização responsiva e moderna -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Estilos CSS personalizados para a página */
+        body {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .progress {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            height: 25px;
+        }
+        .progress-bar {
+            font-size: 16px;
+            line-height: 25px;
+        }
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+        }
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .result-card {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .result-image {
+            max-width: 300px;
+            max-height: 300px;
+            margin-bottom: 10px;
+        }
+        #downloadBtn {
+            margin-top: 20px;
+        }
+        .loading-spinner {
+            display: none; /* Esconde o spinner de carregamento por padrão */
+            margin-left: 10px;
+        }
+        .prompt-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Análise de Imagens para RAG</h1>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Upload de Imagens</h5>
+            </div>
+            <div class="card-body">
+                <!-- Formulário para upload de imagens -->
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <!-- Seção para personalizar o prompt de análise -->
+                    <div class="prompt-container">
+                        <h6>Personalizar Prompt de Análise</h6>
+                        <div class="mb-3">
+                            <label for="promptInput" class="form-label">Prompt para análise das imagens:</label>
+                            <!-- Campo de texto para o usuário digitar o prompt personalizado -->
+                            <textarea class="form-control" id="promptInput" name="prompt" rows="3" placeholder="Descreva detalhadamente o conteúdo desta imagem para fins de RAG. Inclua objetos, pessoas, ações, texto visível e o contexto geral da cena."></textarea>
+                            <div class="form-text">Personalize o prompt para extrair informações específicas das imagens.</div>
+                        </div>
+                        <!-- Botão para restaurar o prompt padrão -->
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="resetPromptBtn">Restaurar Prompt Padrão</button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="imageInput" class="form-label">Selecione as imagens para análise:</label>
+                        <!-- Input para seleção de múltiplos arquivos de imagem -->
+                        <input class="form-control" type="file" id="imageInput" name="files[]" multiple accept="image/*">
+                    </div>
+                    <!-- Contêiner para exibir as pré-visualizações das imagens selecionadas -->
+                    <div class="preview-container" id="previewContainer"></div>
+                    <!-- Botão para enviar o formulário e iniciar a análise -->
+                    <button type="submit" class="btn btn-primary">
+                        Analisar Imagens
+                        <!-- Spinner de carregamento que aparece durante a análise -->
+                        <div class="spinner-border spinner-border-sm loading-spinner" id="loadingSpinner" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                    </button>
+                </form>
+                
+                <!-- Barra de progresso (inicialmente oculta) -->
+                <div class="progress mt-3" style="display: none;" id="progressContainer">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         id="progressBar"
+                         aria-valuenow="0" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100" 
+                         style="width: 0%">
+                        0%
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Card para exibir os resultados da análise (inicialmente oculto) -->
+        <div class="card" id="resultsCard" style="display: none;">
+            <div class="card-header">
+                <h5>Resultados da Análise</h5>
+            </div>
+            <div class="card-body">
+                <!-- Contêiner onde os resultados individuais de cada imagem serão exibidos -->
+                <div id="resultsContainer"></div>
+                <!-- Botão para baixar o arquivo RAG estruturado -->
+                <button id="downloadBtn" class="btn btn-success">Baixar Arquivo RAG Estruturado</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script JavaScript para interatividade da página -->
+    <script>
+        // Garante que o script só seja executado após o carregamento completo do DOM
+        document.addEventListener("DOMContentLoaded", function() {
+            // Obtém referências para os elementos HTML usando seus IDs
+            const uploadForm = document.getElementById("uploadForm");
+            const imageInput = document.getElementById("imageInput");
+            const promptInput = document.getElementById("promptInput");
+            const resetPromptBtn = document.getElementById("resetPromptBtn");
+            const previewContainer = document.getElementById("previewContainer");
+            const progressContainer = document.getElementById("progressContainer");
+            const progressBar = document.getElementById("progressBar");
+            const resultsCard = document.getElementById("resultsCard");
+            const resultsContainer = document.getElementById("resultsContainer");
+            const downloadBtn = document.getElementById("downloadBtn");
+            const loadingSpinner = document.getElementById("loadingSpinner");
+            
+            // Define o prompt padrão para a análise de imagens
+            const defaultPrompt = "Descreva detalhadamente o conteúdo desta imagem para fins de RAG. Inclua objetos, pessoas, ações, texto visível e o contexto geral da cena.";
+            
+            // Adiciona um ouvinte de evento ao botão "Restaurar Prompt Padrão"
+            resetPromptBtn.addEventListener("click", function() {
+                promptInput.value = defaultPrompt; // Define o valor do campo de prompt para o padrão
+            });
+            
+            // Função para mostrar pré-visualizações das imagens selecionadas pelo usuário
+            imageInput.addEventListener("change", function() {
+                previewContainer.innerHTML = ""; // Limpa pré-visualizações anteriores
+                
+                // Verifica se há arquivos selecionados
+                if (this.files) {
+                    // Itera sobre cada arquivo selecionado
+                    Array.from(this.files).forEach(file => {
+                        const reader = new FileReader(); // Cria um leitor de arquivos
+                        
+                        // Quando o arquivo é lido, esta função é executada
+                        reader.onload = function(e) {
+                            const img = document.createElement("img"); // Cria um elemento <img>
+                            img.src = e.target.result; // Define a fonte da imagem como o resultado da leitura (base64)
+                            img.className = "image-preview"; // Adiciona uma classe CSS para estilização
+                            previewContainer.appendChild(img); // Adiciona a imagem ao contêiner de pré-visualização
+                        }
+                        
+                        reader.readAsDataURL(file); // Lê o arquivo como uma URL de dados (base64)
+                    });
+                }
+            });
+            
+            // Função para enviar as imagens para análise quando o formulário é submetido
+            uploadForm.addEventListener("submit", function(e) {
+                e.preventDefault(); // Previne o comportamento padrão de submissão do formulário (recarregar a página)
+                
+                const formData = new FormData(); // Cria um objeto FormData para enviar os arquivos e dados do formulário
+                const files = imageInput.files; // Obtém os arquivos selecionados
+                
+                // Verifica se o usuário selecionou alguma imagem
+                if (files.length === 0) {
+                    alert("Por favor, selecione pelo menos uma imagem.");
+                    return;
+                }
+                
+                // Adiciona cada arquivo selecionado ao objeto FormData
+                for (let i = 0; i < files.length; i++) {
+                    formData.append("files[]", files[i]);
+                }
+                
+                // Adiciona o prompt personalizado (ou o padrão) ao objeto FormData
+                formData.append("prompt", promptInput.value || defaultPrompt);
+                
+                // Mostra a barra de progresso e o spinner de carregamento
+                progressContainer.style.display = "block";
+                loadingSpinner.style.display = "inline-block";
+                
+                // Envia os arquivos para o servidor usando a API Fetch
+                fetch("/api/upload", { // Envia para a rota /api/upload do backend
+                    method: "POST",
+                    body: formData // O corpo da requisição é o FormData com os arquivos e o prompt
+                })
+                .then(response => {
+                    // Verifica se a resposta da requisição foi bem-sucedida (status 2xx)
+                    if (!response.ok) {
+                        throw new Error("Erro no upload das imagens");
+                    }
+                    return response.json(); // Converte a resposta para JSON
+                })
+                .then(data => {
+                    // Esconde a barra de progresso e o spinner após a conclusão
+                    progressContainer.style.display = "none";
+                    loadingSpinner.style.display = "none";
+                    
+                    // Exibe os resultados da análise na página
+                    displayResults(data.results);
+                    
+                    // Armazena o caminho do arquivo RAG gerado para o botão de download
+                    downloadBtn.setAttribute("data-file", data.rag_file);
+                    
+                    // Mostra o card de resultados
+                    resultsCard.style.display = "block";
+                })
+                .catch(error => {
+                    // Lida com erros que podem ocorrer durante a requisição
+                    console.error("Erro:", error);
+                    alert("Ocorreu um erro durante o upload: " + error.message);
+                    loadingSpinner.style.display = "none";
+                });
+                
+                // Simula o progresso na barra de progresso (já que o feedback em tempo real do servidor é complexo)
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    if (progress > 95) { // Para a simulação antes de 100% para indicar que o servidor ainda está processando
+                        clearInterval(interval);
+                    } else {
+                        progressBar.style.width = progress + "%";
+                        progressBar.setAttribute("aria-valuenow", progress);
+                        progressBar.textContent = progress + "%";
+                    }
+                }, 500); // Atualiza a cada 500 milissegundos
+            });
+            
+            // Função para exibir os resultados da análise na interface
+            function displayResults(results) {
+                resultsContainer.innerHTML = ""; // Limpa resultados anteriores
+                
+                // Itera sobre cada resultado de imagem
+                results.forEach((result, index) => {
+                    const resultCard = document.createElement("div"); // Cria um novo card para cada resultado
+                    resultCard.className = "result-card";
+                    
+                    // Constrói o HTML para o conteúdo do card de resultado
+                    let cardContent = `
+                        <h5>Imagem ${index + 1}: ${result.filename}</h5>
+                    `;
+                    
+                    // Se houver um erro na análise da imagem, exibe uma mensagem de erro
+                    if (result.error) {
+                        cardContent += `<div class="alert alert-danger">${result.error}</div>`;
+                    } else {
+                        // Extrai o nome do arquivo da imagem para construir o caminho relativo
+                        const imagePath = result.path.split("/uploads/")[1] || result.path.split("/").pop();
+                        
+                        // Adiciona a imagem e a descrição da análise ao card
+                        cardContent += `
+                            <img src="/static/uploads/${imagePath}" class="result-image" alt="${result.filename}">
+                            <h6>Análise:</h6>
+                            <p>${result.description}</p>
+                        `;
+                    }
+                    
+                    resultCard.innerHTML = cardContent; // Insere o HTML no card
+                    resultsContainer.appendChild(resultCard); // Adiciona o card ao contêiner de resultados
+                });
+            }
+            
+            // Função para lidar com o download do arquivo RAG estruturado
+            downloadBtn.addEventListener("click", function() {
+                const filePath = this.getAttribute("data-file"); // Obtém o caminho do arquivo armazenado no botão
+                if (filePath) {
+                    // Abre uma nova janela para iniciar o download do arquivo
+                    window.open("/api/download?file=" + encodeURIComponent(filePath), "_blank");
+                }
+            });
+        });
+    </script>
+    
+    <!-- Link para o JavaScript do Bootstrap (necessário para componentes como o spinner) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
