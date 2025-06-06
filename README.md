@@ -105,6 +105,15 @@ Abra seu navegador web e navegue para o endereço fornecido pelo terminal (por e
 
 O arquivo de texto estruturado gerado (`rag_structured_data.txt`) é projetado para ser facilmente consumido por sistemas de RAG. Cada imagem e sua descrição são claramente delimitadas, permitindo que um modelo de linguagem (LLM) possa buscar e recuperar informações relevantes com base em consultas. O prompt personalizado é uma ferramenta poderosa para direcionar a extração de características específicas das imagens, otimizando a qualidade dos dados para o seu caso de uso de IA.
 
+## Observações para Deploy e Execução
+
+- **Versão do Python:** O projeto requer Python 3.10 ou superior. Recomenda-se utilizar sempre a versão mais recente suportada.
+- **Ambiente Virtual:** Sempre utilize um ambiente virtual para isolar as dependências do projeto.
+- **Arquivo `.env`:** Crie um arquivo `.env` na raiz do projeto com a variável `OPENAI_API_KEY` contendo sua chave da OpenAI. Nunca suba esse arquivo para o repositório. Use o arquivo `.env.example` como modelo.
+- **Dependências:** Instale as dependências com `pip install -r requirements.txt` após ativar o ambiente virtual.
+- **Execução:** Para rodar a aplicação, execute `python src/main.py` com o ambiente virtual ativado.
+- **Segurança:** Nunca compartilhe sua chave da OpenAI publicamente ou em repositórios.
+
 ## Licença
 
 Este projeto é de código aberto e está disponível sob a licença MIT. Sinta-se à vontade para modificar e distribuir.

@@ -177,8 +177,8 @@ def upload_file():
         f.write("## Resultados da Análise\n\n")
         for result in results:
             if "description" in result:
-                f.write(f"### {result["filename"]}\n\n") # Título para cada imagem.
-                f.write(f"{result["description"]}\n\n") # Descrição da imagem.
+                f.write(f"### {result['filename']}\n\n") # Título para cada imagem.
+                f.write(f"{result['description']}\n\n") # Descrição da imagem.
     
     # Gera também uma versão em PDF do arquivo RAG usando a ferramenta manus-md-to-pdf.
     rag_pdf = os.path.join(session_dir, "rag_structured_data.pdf")
