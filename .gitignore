@@ -1,20 +1,22 @@
-# Ambiente virtual
-venv/
-
-# Arquivos de configuração e ambiente
-.env
-*.env
-
-# Cache do Python
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Virtualenv
+venv/
+.venv/
+
+# VSCode
+.vscode/
 
 # Uploads e resultados temporários
-src/static/uploads/
+static/uploads/
 
-# Arquivos temporários de editor
-*.swp
-*.swo
+# Arquivos de ambiente
+.env
 
 # Outros
 .DS_Store
+*.log
