@@ -1,6 +1,6 @@
 # Automação de Análise de Imagens para RAG com OpenAI e Flask
 
-Este projeto é uma automação em Python que permite o upload de imagens, as analisa usando a API de Visão da OpenAI (GPT-4o) e gera um arquivo de texto estruturado para uso em sistemas de Retrieval-Augmented Generation (RAG). A aplicação inclui um frontend web simples para facilitar o upload e a visualização dos resultados, além de permitir a personalização do prompt de análise.
+Este projeto é uma automação em Python que permite o upload de imagens, as analisa usando a API de Visão da OpenAI (GPT-4o) e gera um arquivo de texto estruturado (e opcionalmente um PDF) para uso em sistemas de Retrieval-Augmented Generation (RAG). A aplicação inclui um frontend web simples para facilitar o upload e a visualização dos resultados, além de permitir a personalização do prompt de análise.
 
 ## Funcionalidades
 
@@ -8,8 +8,8 @@ Este projeto é uma automação em Python que permite o upload de imagens, as an
 *   **Análise de Conteúdo de Imagens:** Utiliza a API GPT-4o da OpenAI para descrever detalhadamente o conteúdo de cada imagem.
 *   **Prompt Personalizável:** Altere o prompt de análise diretamente no frontend para extrair informações específicas de acordo com suas necessidades.
 *   **Geração de Dados Estruturados para RAG:** Os resultados da análise são formatados em um arquivo de texto (`.txt`) com uma estrutura clara, ideal para alimentar modelos de IA.
+*   **Geração de PDF:** Uma versão em PDF do arquivo estruturado é gerada automaticamente para facilitar a visualização e o compartilhamento.
 *   **Exibição de Progresso:** Acompanhe o progresso da análise das imagens diretamente na interface.
-*   **Limpeza automática das respostas:** O backend remove instruções e exemplos do prompt, entregando apenas o texto extraído da imagem.
 
 ## Estrutura do Projeto
 
@@ -35,7 +35,7 @@ Siga os passos abaixo para configurar e executar a aplicação em seu ambiente l
 
 ### Pré-requisitos
 
-*   Python 3.10 ou superior
+*   Python 3.8 ou superior
 *   Chave da API da OpenAI (você pode obtê-la em [platform.openai.com](https://platform.openai.com/))
 
 ### 1. Clonar o Repositório (ou criar a estrutura)
@@ -92,15 +92,14 @@ Abra seu navegador web e navegue para o endereço fornecido pelo terminal (por e
 3.  **Personalizar Prompt (Opcional):** No campo "Prompt para análise das imagens:", você pode digitar um prompt personalizado para guiar a análise da IA. Se deixar em branco, o prompt padrão será utilizado. Há um botão "Restaurar Prompt Padrão" para conveniência.
 4.  **Analisar Imagens:** Clique no botão "Analisar Imagens". Um spinner e uma barra de progresso (simulada) aparecerão enquanto as imagens são processadas.
 5.  **Visualizar Resultados:** Após a análise, os resultados (descrição gerada pela IA para cada imagem) serão exibidos na seção "Resultados da Análise".
-6.  **Baixar Arquivo RAG Estruturado:** Clique no botão "Baixar Arquivo RAG Estruturado" para fazer o download de um arquivo de texto (`.txt`) contendo todas as descrições formatadas para RAG.
+6.  **Baixar Arquivo RAG Estruturado:** Clique no botão "Baixar Arquivo RAG Estruturado" para fazer o download de um arquivo de texto (`.txt`) contendo todas as descrições formatadas para RAG. Uma versão em PDF também será gerada e baixada se a conversão for bem-sucedida.
 
 ## Detalhes Técnicos
 
 *   **Backend:** Desenvolvido com Flask, um microframework web para Python.
 *   **Frontend:** HTML, CSS (com Bootstrap para estilização) e JavaScript puro para interatividade.
 *   **Análise de Imagens:** Utiliza a API `gpt-4o` da OpenAI para capacidades de visão computacional.
-*   **Geração de TXT estruturado:** O arquivo TXT é gerado automaticamente e pode ser utilizado em sistemas RAG.
-*   **Limpeza de resposta:** O backend remove instruções e exemplos do prompt, entregando apenas o texto extraído da imagem.
+*   **Geração de PDF:** A ferramenta `manus-md-to-pdf` é utilizada para converter o arquivo Markdown (que é o formato do `.txt` gerado) em PDF.
 
 ## Considerações para RAG e IA
 

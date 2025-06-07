@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análise de Imagens para RAG</title>
-    <!-- Link para o CSS do Bootstrap para estilização responsiva e moderna -->
+   
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Estilos CSS personalizados para a página */
+       
         body {
             padding-top: 2rem;
             padding-bottom: 2rem;
@@ -100,7 +100,7 @@
                     </button>
                 </form>
                 
-                <!-- Barra de progresso (inicialmente oculta) -->
+                <!-- Barra de progresso  -->
                 <div class="progress mt-3" style="display: none;" id="progressContainer">
                     <div class="progress-bar progress-bar-striped progress-bar-animated" 
                          role="progressbar" 
@@ -115,7 +115,7 @@
             </div>
         </div>
         
-        <!-- Card para exibir os resultados da análise (inicialmente oculto) -->
+        <!-- Card para exibir os resultados da análise -->
         <div class="card" id="resultsCard" style="display: none;">
             <div class="card-header">
                 <h5>Resultados da Análise</h5>
@@ -129,11 +129,11 @@
         </div>
     </div>
 
-    <!-- Script JavaScript para interatividade da página -->
+   
     <script>
-        // Garante que o script só seja executado após o carregamento completo do DOM
+        // script executado após o carregamento completo do DOM
         document.addEventListener("DOMContentLoaded", function() {
-            // Obtém referências para os elementos HTML usando seus IDs
+            
             const uploadForm = document.getElementById("uploadForm");
             const imageInput = document.getElementById("imageInput");
             const promptInput = document.getElementById("promptInput");
@@ -156,138 +156,94 @@
             
             // Função para mostrar pré-visualizações das imagens selecionadas pelo usuário
             imageInput.addEventListener("change", function() {
-                previewContainer.innerHTML = ""; // Limpa pré-visualizações anteriores
-                
-                // Verifica se há arquivos selecionados
+                previewContainer.innerHTML = "";
                 if (this.files) {
-                    // Itera sobre cada arquivo selecionado
                     Array.from(this.files).forEach(file => {
-                        const reader = new FileReader(); // Cria um leitor de arquivos
-                        
-                        // Quando o arquivo é lido, esta função é executada
+                        const reader = new FileReader();
                         reader.onload = function(e) {
-                            const img = document.createElement("img"); // Cria um elemento <img>
-                            img.src = e.target.result; // Define a fonte da imagem como o resultado da leitura (base64)
-                            img.className = "image-preview"; // Adiciona uma classe CSS para estilização
-                            previewContainer.appendChild(img); // Adiciona a imagem ao contêiner de pré-visualização
+                            const img = document.createElement("img");
+                            img.src = e.target.result;
+                            img.className = "image-preview";
+                            previewContainer.appendChild(img);
                         }
-                        
-                        reader.readAsDataURL(file); // Lê o arquivo como uma URL de dados (base64)
+                        reader.readAsDataURL(file);
                     });
                 }
             });
-            
             // Função para enviar as imagens para análise quando o formulário é submetido
             uploadForm.addEventListener("submit", function(e) {
-                e.preventDefault(); // Previne o comportamento padrão de submissão do formulário (recarregar a página)
-                
-                const formData = new FormData(); // Cria um objeto FormData para enviar os arquivos e dados do formulário
-                const files = imageInput.files; // Obtém os arquivos selecionados
-                
-                // Verifica se o usuário selecionou alguma imagem
+                e.preventDefault();
+                const formData = new FormData();
+                const files = imageInput.files;
                 if (files.length === 0) {
                     alert("Por favor, selecione pelo menos uma imagem.");
                     return;
                 }
-                
-                // Adiciona cada arquivo selecionado ao objeto FormData
                 for (let i = 0; i < files.length; i++) {
                     formData.append("files[]", files[i]);
                 }
-                
-                // Adiciona o prompt personalizado (ou o padrão) ao objeto FormData
                 formData.append("prompt", promptInput.value || defaultPrompt);
-                
-                // Mostra a barra de progresso e o spinner de carregamento
                 progressContainer.style.display = "block";
                 loadingSpinner.style.display = "inline-block";
-                
-                // Envia os arquivos para o servidor usando a API Fetch
-                fetch("/api/upload", { // Envia para a rota /api/upload do backend
+                fetch("/api/upload", {
                     method: "POST",
-                    body: formData // O corpo da requisição é o FormData com os arquivos e o prompt
+                    body: formData
                 })
                 .then(response => {
-                    // Verifica se a resposta da requisição foi bem-sucedida (status 2xx)
                     if (!response.ok) {
                         throw new Error("Erro no upload das imagens");
                     }
-                    return response.json(); // Converte a resposta para JSON
+                    return response.json();
                 })
                 .then(data => {
-                    // Esconde a barra de progresso e o spinner após a conclusão
                     progressContainer.style.display = "none";
                     loadingSpinner.style.display = "none";
-                    
-                    // Exibe os resultados da análise na página
                     displayResults(data.results);
-                    
-                    // Armazena o caminho do arquivo RAG gerado para o botão de download
                     downloadBtn.setAttribute("data-file", data.rag_file);
-                    
-                    // Mostra o card de resultados
                     resultsCard.style.display = "block";
                 })
                 .catch(error => {
-                    // Lida com erros que podem ocorrer durante a requisição
                     console.error("Erro:", error);
                     alert("Ocorreu um erro durante o upload: " + error.message);
                     loadingSpinner.style.display = "none";
                 });
-                
-                // Simula o progresso na barra de progresso (já que o feedback em tempo real do servidor é complexo)
                 let progress = 0;
                 const interval = setInterval(() => {
                     progress += 5;
-                    if (progress > 95) { // Para a simulação antes de 100% para indicar que o servidor ainda está processando
+                    if (progress > 95) {
                         clearInterval(interval);
                     } else {
                         progressBar.style.width = progress + "%";
                         progressBar.setAttribute("aria-valuenow", progress);
                         progressBar.textContent = progress + "%";
                     }
-                }, 500); // Atualiza a cada 500 milissegundos
+                }, 500);
             });
-            
-            // Função para exibir os resultados da análise na interface
             function displayResults(results) {
-                resultsContainer.innerHTML = ""; // Limpa resultados anteriores
-                
-                // Itera sobre cada resultado de imagem
+                resultsContainer.innerHTML = "";
                 results.forEach((result, index) => {
-                    const resultCard = document.createElement("div"); // Cria um novo card para cada resultado
+                    const resultCard = document.createElement("div");
                     resultCard.className = "result-card";
-                    
-                    // Constrói o HTML para o conteúdo do card de resultado
                     let cardContent = `
                         <h5>Imagem ${index + 1}: ${result.filename}</h5>
                     `;
-                    
-                    // Se houver um erro na análise da imagem, exibe uma mensagem de erro
                     if (result.error) {
                         cardContent += `<div class="alert alert-danger">${result.error}</div>`;
                     } else {
-                        // Extrai o nome do arquivo da imagem para construir o caminho relativo
                         const imagePath = result.path.split("/uploads/")[1] || result.path.split("/").pop();
-                        
-                        // Adiciona a imagem e a descrição da análise ao card
                         cardContent += `
                             <img src="/static/uploads/${imagePath}" class="result-image" alt="${result.filename}">
                             <h6>Análise:</h6>
                             <p>${result.description}</p>
                         `;
                     }
-                    
-                    resultCard.innerHTML = cardContent; // Insere o HTML no card
-                    resultsContainer.appendChild(resultCard); // Adiciona o card ao contêiner de resultados
+                    resultCard.innerHTML = cardContent;
+                    resultsContainer.appendChild(resultCard);
                 });
             }
-            
-            // Função para lidar com o download do arquivo RAG estruturado
             downloadBtn.addEventListener("click", function() {
-                const filePath = this.getAttribute("data-file"); // Obtém o caminho do arquivo armazenado no botão
+                const filePath = this.getAttribute("data-file");
                 if (filePath) {
-                    // Abre uma nova janela para iniciar o download do arquivo
                     window.open("/api/download?file=" + encodeURIComponent(filePath), "_blank");
                 }
             });
