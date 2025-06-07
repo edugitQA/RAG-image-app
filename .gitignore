@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtualenv
+venv/
+.venv/
+
+# VSCode
+.vscode/
+
+# Uploads e resultados temporários
+static/uploads/
+
+# Arquivos de ambiente
+.env
+
+# Outros
+.DS_Store
+*.log
